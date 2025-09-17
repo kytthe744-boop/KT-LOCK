@@ -1,0 +1,85 @@
+package com.example.lockedcalculator;
+
+import android.os.Bundle;
+import android.os.Handler;
+import android.widget.Button;
+import android.widget.TextView;
+import android.widget.Toast;
+import androidx.appcompat.app.AppCompatActivity;
+
+public class MainActivity extends AppCompatActivity {
+
+    private TextView display;
+    private boolean unlocked = false;
+    private String input = "";
+    private Double firstOperand = null;
+    private String operator = null;
+    private Handler handler = new Handler();
+    private Runnable unlockRunnable;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        display = findViewById(R.id.display);
+
+        Button equalBtn = findViewById(R.id.btn_equal);
+        Button acBtn = findViewById(R.id.btn_ac);
+
+        // "=" hold for 5s unlock
+        equalBtn.setOnTouchListener((v, event) -> {
+            switch (event.getAction()) {
+                case android.view.MotionEvent.ACTION_DOWN:
+                    if (!unlocked) {
+                        unlockRunnable = () -> {
+                            unlocked = true;
+                            Toast.makeText(this, "Unlocked!", Toast.LENGTH_SHORT).show();
+                        };
+                        handler.postDelayed(unlockRunnable, 5000);
+                    }
+                    break;
+                case android.view.MotionEvent.ACTION_UP:
+                    handler.removeCallbacks(unlockRunnable);
+                    if (unlocked && operator != null) {
+                        compute();
+                    }
+                    break;
+            }
+            return false;
+        });
+
+        // AC + "=" to exit app
+        acBtn.setOnClickListener(v -> {
+            if (unlocked) {
+                finishAffinity(); // close app completely
+            } else {
+                input = "";
+                firstOperand = null;
+                operator = null;
+                display.setText("0");
+            }
+        });
+    }
+
+    private void compute() {
+        double second = Double.parseDouble(input.equals("") ? "0" : input);
+        double result = 0;
+
+        if (firstOperand != null) {
+            switch (operator) {
+                case "+": result = firstOperand + second; break;
+                case "-": result = firstOperand - second; break;
+                case "*": result = firstOperand * second; break;
+                case "/": result = second == 0 ? 0 : firstOperand / second; break;
+            }
+        } else {
+            result = second;
+        }
+
+        display.setText(String.valueOf(result));
+        input = String.valueOf(result);
+        firstOperand = null;
+        operator = null;
+    }
+}
